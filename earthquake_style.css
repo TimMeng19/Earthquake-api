@@ -1,0 +1,173 @@
+<style>
+
+body { margin: 0; padding: 0; }
+
+h2, h3 {
+    margin: 10px;
+    font-size: 1.2em;
+}
+
+h3 {
+    font-size: 1em;
+}
+
+p {
+  font-size: 0.85em;
+  margin: 10px;
+  text-align: left;
+}
+
+
+
+#side-panel {
+    position: relative;
+    height: 500px;
+    width: 300px;
+    margin: 1px;
+    padding: 10px 20px;
+    background-color: white;
+    opacity: 0.9;
+}
+
+.session {
+    margin-bottom: 10px;
+}
+     
+.row {
+    height: 12px;
+    width: 100%;
+}
+     
+.colors {
+    background: linear-gradient(
+    to right,
+    #feeaea,
+    #fe5757,
+    #b62020,
+    #791919
+);
+    margin-bottom: -5px;
+    margin-top: -10px;
+}
+     
+.label {
+    width: 23%;
+    display: inline-block;
+    text-align: left;
+}
+
+#map { position: absolute; top: 0; bottom: 0; width: 100%;};
+
+#pd {
+  position: relative;
+  top: -90%;
+  padding: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  line-height: 20px;
+  height: 200px;
+  margin-bottom: 30px;
+  width: 30%;
+  text-align: center;
+  border: none;
+}
+
+
+#EarthquakePoint {
+  display: block;
+  position: relative;
+  left: -46%;
+  top: -60%;
+  margin: 2px auto;
+  width: 8%;
+  height: 5%;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  font-size: 12px;
+  text-align: center;
+  color: #fff;
+  background: #ffffff;
+  border: 2px solid #ee8a65;
+}
+
+#EarthquakePoint a {
+  font-size: 13px;
+  color: #404040;
+  display: block;
+  margin: 0;
+  padding: 0;
+  padding: 10px;
+  text-decoration: none;
+  border-color: 1px solid #ee8a65;
+  text-align: center;
+}
+
+#EarthquakePoint a:last-child {
+  border: none;
+}
+
+#EarthquakePoint a:hover {
+  background-color: #f8f8f8;
+  color: #404040;
+}
+
+#EarthquakePoint a.active {
+  background-color: #ee8a65;
+  color: #ffffff;
+}
+
+#EarthquakePoint a.active:hover {
+  background: #f27546;
+}
+
+
+#EarthquakeHeat {
+  display: block;
+  position: relative;
+  left: -46%;
+  top: -60%;
+  margin: 2px auto;
+  width: 8%;
+  height: 5%;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  font-size: 12px;
+  text-align: center;
+  color: #fff;
+  background: #ffffff;
+  border: 2px solid #ee8a65;
+}
+
+#EarthquakeHeat aa {
+  font-size: 13px;
+  color: #404040;
+  display: block;
+  margin: 0;
+  padding: 0;
+  padding: 10px;
+  text-decoration: none;
+  border-color: 1px solid #ee8a65;
+  text-align: center;
+}
+
+#EarthquakeHeat aa:last-child {
+  border: none;
+}
+
+#EarthquakeHeat aa:hover {
+  background-color: #f8f8f8;
+  color: #404040;
+}
+
+#EarthquakeHeat aa.active {
+  background-color: #ee8a65;
+  color: #ffffff;
+}
+
+#EarthquakeHeat aa.active:hover {
+  background: #f27546;
+}
+
+
+</style>
