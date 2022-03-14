@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Major Earthquakes Distribution</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.0.1/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.0.1/mapbox-gl.css" rel="stylesheet" />
+    <script charset="utf-8" src="https://d3js.org/d3.v4.min.js"></script>
+
+    <!-- read the .css file -->
+    <link rel="stylesheet" href="earthquake_style.css">
+</head>
+
+<body>
+
+    <div id="map"></div>
+
+    <div id='side-panel'>
+        <h3>Major Earthquakes Distribution (Mag >= 3) in Last 30 Days</h3>
+        <p>Data Source: <a href='https://earthquake.usgs.gov/'>USGS Earthquake Hazard Program</a></p>
+
+        <h4>Earthquake Magnitude</h4>
+        <img src="mag_symbol.png" width="175" height="130" alt="Magnitude Legend">
+
+        <div class="session">
+            <h4>Earthquake Depth</h4>
+            <div class="row colors"></div>
+            <div class="row labels"></div>
+            <div class="label">0</div>
+            <div class="label">25</div>
+            <div class="label">50</div>
+            <div class="label">300+</div>
+
+
+            <h4>Filter Earthquakes in the Last:</h4>
+            <div class='row' id='filters'>
+                <input id='all' type='radio' name='toggle' value='all' checked='checked'>
+                <label for='all'>30 Days</label>
+                <input id='seven' type='radio' name='toggle' value='seven'>
+                <label for='seven'>7 Days</label>
+                <input id='one' type='radio' name='toggle' value='one'>
+                <label for='one'>1 Day</label>
+            </div>
+
+        </div>
+    </div>
+
+
+    <div class='map-overlay' id='pd'>
+        <button id="EarthquakePoint"></button>
+        <button id="EarthquakeHeat"></button>
+    </div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoidGltbWVuZyIsImEiOiJja2xmN3F5NDMzcjFyMm9ucnBjZDYxd2o3In0.SqHvra71P3s8BS3MUyNFaw';
+
+        // Load a new map in the 'map' HTML div
+        var map = new mapboxgl.Map({
+            container: 'map', // container id
+            style: 'mapbox://styles/timmeng/cl0bdie64000914pgf8fs2vp1',
+            center: [180, 10], // starting position [lng, lat]
+            zoom: 1.5 // starting zoom
+        });
+
+        map.addControl(new mapboxgl.NavigationControl()); //Adds zoom control
+
+        // disable map rotation using right click + drag
+        map.dragRotate.disable();
+        // disable map rotation using touch rotation gesture
+        map.touchZoomRotate.disableRotation();
+
+
+
+
+        map.on('load', function () {
+
+            d3.json("https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minmagnitude=3", function (DisasterStatus) {
+
+
+                console.log(DisasterStatus);
+
+                var myGeojson = {};
+                myGeojson.type = 'FeatureCollection';
+                myGeojson.features = [];
+
+
+                var i
+                for (i = 0; i < DisasterStatus.features.length; i++) {
+
+                    var Name = DisasterStatus.features[i].properties.title
+                    var Magnitude = DisasterStatus.features[i].properties.mag
+                    var USGSLink = DisasterStatus.features[i].properties.url
+                    var Depth = DisasterStatus.features[i].geometry.coordinates[2]
+                    var orig_time = DisasterStatus.features[i].properties.time
+                    var date = new Date(orig_time)
+                    var readable = date.getFullYear() + '/' + ("0" + (date.getMonth() + 1)).slice(-2) + '/' + ("0" + date.getDate()).slice(-2);
+
+                    var newFeature = {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [DisasterStatus.features[i].geometry.coordinates[0], DisasterStatus.features[i].geometry.coordinates[1]]
+                        },
+                        "properties": {
+                            "Name": Name,
+                            "Magnitude": Magnitude,
+                            "USGSLink": USGSLink,
+                            "Depth": Depth,
+                            "readable": readable,
+                            "orig_time": orig_time
+                        }
+                    }
+                    myGeojson.features.push(newFeature);
+                }
+
+                map.addSource('points', {
+                    'type': 'geojson',
+                    'data': myGeojson
+                });
+
+
+                map.addLayer({
+                    id: 'Earthquake Location Layer',
+                    type: 'circle',
+                    source: 'points',
+                    'layout': {
+                        'visibility': 'visible'
+                    },
+                    paint: {
+                        'circle-color': {
+                            property: 'Depth',
+                            stops: [
+                                [0, "#feeaea"],
+                                [25, "#fe5757"],
+                                [50, "#b62020"],
+                                [300, "#791919"],  // earthquakes deeper than 300km are deep-focused earthquake
+                            ]
+                        },
+                        'circle-opacity': 0.6,
+                        'circle-stroke-width': 1,
+                        'circle-stroke-color': '#999',
+                        'circle-stroke-opacity': 0.7,
+                        'circle-radius': {
+                            property: 'Magnitude',
+                            stops: [
+                                [{ zoom: 2, value: 3 }, 0.5],
+                                [{ zoom: 2, value: 6 }, 15],
+                                [{ zoom: 2, value: 9 }, 70],
+                                [{ zoom: 6, value: 3 }, 0.6],
+                                [{ zoom: 6, value: 6 }, 30],
+                                [{ zoom: 6, value: 9 }, 90],
+                                [{ zoom: 10, value: 3 }, 1],
+                                [{ zoom: 10, value: 6 }, 60],
+                                [{ zoom: 10, value: 9 }, 110],
+                            ]
+                        }
+                    }
+                });
+                var popup = new mapboxgl.Popup({
+                    closeButton: false,
+                    closeOnClick: false
+                });
+
+                map.on('click', 'Earthquake Location Layer', function (e) {
+
+                    var coordinates = e.features[0].geometry.coordinates.slice();
+                    var weblink = e.features[0].properties.USGSLink;
+                    var date = new Date()
+                    var description = "<h3>" +
+                        e.features[0].properties.Name +
+                        "</h3><p>Magnitude: " +
+                        e.features[0].properties.Magnitude +
+                        "</p><p>Depth: " +
+                        e.features[0].properties.Depth +
+                        ' km</p><p>Time: ' +
+                        e.features[0].properties.readable +
+                        '</p><p>More Info: <a href="' +
+                        e.features[0].properties.USGSLink +
+                        '">' + "Click here" + '</a></p>';
+
+                    new mapboxgl.Popup()
+                        .setLngLat(coordinates)
+                        .setHTML(description)
+                        .addTo(map);
+                });
+
+                map.on('mouseenter', "Earthquake Location Layer", function () {
+                    map.getCanvas().style.cursor = 'pointer';
+
+                });
+
+                map.on('mouseleave', 'Earthquake Location Layer', function () {
+                    map.getCanvas().style.cursor = '';
+                });
+
+                map.addLayer(
+                    {
+                        id: 'Earthquake Heatmap',
+                        type: 'heatmap',
+                        source: 'points',
+                        maxzoom: 10,
+                        'layout': {
+                            'visibility': 'none'
+                        },
+                        paint: {
+                            // increase weight as diameter breast height increases
+                            'heatmap-weight': {
+                                property: 'Magnitude',
+                                type: 'exponential',
+                                stops: [
+                                    [3, 0],
+                                    [9, 1]
+                                ]
+                            },
+                            // increase intensity as zoom level increases
+                            'heatmap-intensity': {
+                                stops: [
+                                    [2, 0.2],
+                                    [10, 1]
+                                ]
+                            },
+                            // assign color values be applied to points depending on their density
+                            'heatmap-color': [
+                                'interpolate',
+                                ['linear'],
+                                ['heatmap-density'],
+                                0,
+                                'rgba(33,102,172,0)',
+                                0.2,
+                                'rgb(255,255,212)',
+                                0.4,
+                                'rgb(254,217,142)',
+                                0.6,
+                                'rgb(254,153,41)',
+                                0.8,
+                                'rgb(217,95,14)',
+                                1,
+                                'rgb(153,52,4)'
+                            ],
+                            // increase radius as zoom increases
+                            'heatmap-radius': {
+                                stops: [
+                                    [2, 40],
+                                    [10, 100]
+                                ]
+                            },
+                            // decrease opacity to transition into the circle layer
+                            'heatmap-opacity': {
+                                default: 1,
+                                stops: [
+                                    [2, 1],
+                                    [12, 0]
+                                ]
+                            }
+                        }
+                    },
+                    'waterway-label'
+                );
+
+                map.addLayer(
+                    {
+                        'id': 'Earthquake Heatmap dot',
+                        'type': 'circle',
+                        'source': 'points',
+                        'layout': {
+                            'visibility': 'none'
+                        },
+                        'minzoom': 5,
+                        paint: {
+                            'circle-color': "#2166ac",
+                            'circle-opacity': {
+                                stops: [
+                                    [5, 0.1],
+                                    [10, 0.6]
+                                ]
+                            },
+                            'circle-stroke-width': 0.5,
+                            'circle-stroke-color': '#000000',
+                            'circle-stroke-opacity': 0.3,
+                            'circle-radius': {
+                                'base': 0.5,
+                                'stops': [
+                                    [10, 3],
+                                    [15, 6]
+                                ]
+                            }
+                        }
+                    });
+            });
+
+        });
+
+
+
+        // toggle layers button
+        var toggleableLayerIds = ['Earthquake Location Layer'];
+
+        for (var i = 0; i < toggleableLayerIds.length; i++) {
+            var id = toggleableLayerIds[i];
+
+            var link = document.createElement('a');
+            link.href = '#';
+            link.className = 'active';
+            link.textContent = id;
+
+            link.onclick = function (e) {
+                var clickedLayer = this.textContent;
+                e.preventDefault();
+                e.stopPropagation();
+
+                var visibility = map.getLayoutProperty(clickedLayer, 'visibility');
+
+                if (visibility === 'visible') {
+                    map.setLayoutProperty(clickedLayer, 'visibility', 'none');
+                    this.className = '';
+                } else {
+                    this.className = 'active';
+                    map.setLayoutProperty(clickedLayer, 'visibility', 'visible');
+                }
+            };
+
+            var layers = document.getElementById('EarthquakePoint');
+            layers.appendChild(link);
+        };
+
+
+        var toggleableLayerIds_2 = ['Earthquake Heatmap', "Earthquake Heatmap dot"];
+
+        var link_2 = document.createElement('aa');
+        link_2.href = '#';
+        link_2.className = 'inactive';
+        link_2.textContent = 'Earthquake Heatmap';
+        link_2.onclick = function (e) {
+            for (var index in toggleableLayerIds_2) {
+                var clickedLayer_2 = toggleableLayerIds_2[index];
+                e.preventDefault();
+                e.stopPropagation();
+
+                var visibility_2 = map.getLayoutProperty(clickedLayer_2, 'visibility');
+
+                if (visibility_2 === 'visible') {
+                    map.setLayoutProperty(clickedLayer_2, 'visibility', 'none');
+                    this.className = '';
+                } else {
+                    this.className = 'active';
+                    map.setLayoutProperty(clickedLayer_2, 'visibility', 'visible');
+                }
+            }
+        }
+
+        var layers_2 = document.getElementById('EarthquakeHeat');
+        layers_2.appendChild(link_2);
+
+        //filter boxes
+        document.getElementById('filters').addEventListener('change', (event) => {
+            const day = event.target.value;
+            // update the map filter
+            if (day === 'all') {
+                var x = new Date();
+                x.setDate(x.getDate() - 30);
+                filterDay = ['>', 'orig_time', x.getTime()];
+                console.log(filterDay);
+            } else if (day === 'seven') {
+                var x = new Date();
+                x.setDate(x.getDate() - 7);
+                filterDay = ['>', 'orig_time', x.getTime()];
+                console.log(filterDay);
+            } else if (day === 'one') {
+                var x = new Date();
+                x.setDate(x.getDate() - 1);
+                filterDay = ['>', 'orig_time', x.getTime()];
+                console.log(filterDay);
+            } else {
+                console.log('error');
+            }
+            map.setFilter('Earthquake Location Layer', filterDay);
+            map.setFilter('Earthquake Heatmap', filterDay);
+            map.setFilter('Earthquake Heatmap dot', filterDay);
+        });
+
+
+    </script>
+
+
+
+</body>
+
+
+</html>
